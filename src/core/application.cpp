@@ -261,6 +261,7 @@ qint64 Application::getUptimeMs() const
 void Application::requestShutdown()
 {
     qCInfo(application) << "Shutdown requested";
+    emit shutdownRequested();
     QCoreApplication::quit();
 }
 

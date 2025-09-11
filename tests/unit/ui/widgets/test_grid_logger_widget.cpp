@@ -95,7 +95,7 @@ void TestGridLoggerWidget::init()
     
     // Show widget to trigger initialization
     m_widget->show();
-    QTest::qWait(100);
+    QApplication::processEvents(); // Was: QTest::qWait(100)
 }
 
 void TestGridLoggerWidget::cleanup()
@@ -315,7 +315,7 @@ void TestGridLoggerWidget::testPacketLogging()
     packet1["sensor.status"] = "OK";
     
     simulatePacketArrival(packet1);
-    QTest::qWait(100);
+    QApplication::processEvents(); // Was: QTest::qWait(100)
     
     QCOMPARE(m_widget->getCurrentRowCount(), initialRowCount + 1);
     QCOMPARE(rowAddedSpy.count(), 1);
@@ -330,7 +330,7 @@ void TestGridLoggerWidget::testPacketLogging()
         simulatePacketArrival(packet);
     }
     
-    QTest::qWait(200);
+    QApplication::processEvents(); // Was: QTest::qWait(200)
     
     QCOMPARE(m_widget->getCurrentRowCount(), initialRowCount + 6);
 }
@@ -455,7 +455,7 @@ void TestGridLoggerWidget::testAutoSave()
     // Trigger auto-save manually (since timer interval is long)
     m_widget->performAutoSaveForTesting();
     
-    QTest::qWait(500); // Allow auto-save to complete
+    QApplication::processEvents(); // Was: QTest::qWait(500) // Allow auto-save to complete
     
     // Should have completed successfully or with error
     QVERIFY(autoSaveCompletedSpy.count() + autoSaveErrorSpy.count() > 0);
@@ -568,11 +568,11 @@ void TestGridLoggerWidget::testHighVolumeLogging()
         simulatePacketArrival(packet);
         
         if (i % 20 == 0) {
-            QTest::qWait(10); // Periodic pause
+            QApplication::processEvents(); // Periodic pause
         }
     }
     
-    QTest::qWait(200);
+    QApplication::processEvents(); // Was: QTest::qWait(200)
     
     qint64 elapsed = timer.elapsed();
     
@@ -608,7 +608,7 @@ void TestGridLoggerWidget::testMemoryManagement()
         simulatePacketArrival(data);
     }
     
-    QTest::qWait(500);
+    QApplication::processEvents(); // Was: QTest::qWait(500)
     
     QCOMPARE(m_widget->getCurrentRowCount(), 500);
     
@@ -621,7 +621,7 @@ void TestGridLoggerWidget::testMemoryManagement()
     testPacket["memory.field_0"] = "recovery_test";
     simulatePacketArrival(testPacket);
     
-    QTest::qWait(100);
+    QApplication::processEvents(); // Was: QTest::qWait(100)
     QCOMPARE(m_widget->getCurrentRowCount(), 1);
 }
 
@@ -656,7 +656,7 @@ void TestGridLoggerWidget::testLargeDatasetHandling()
         simulatePacketArrival(data);
     }
     
-    QTest::qWait(300);
+    QApplication::processEvents(); // Was: QTest::qWait(300)
     
     QCOMPARE(m_widget->getCurrentRowCount(), 10);
     
@@ -798,7 +798,7 @@ void TestGridLoggerWidget::testMaxRowsLimit()
         simulatePacketArrival(packet);
     }
     
-    QTest::qWait(200);
+    QApplication::processEvents(); // Was: QTest::qWait(200)
     
     // Should not exceed max rows (if auto-delete is enabled)
     if (m_widget->getLoggerOptions().autoDeleteOldest) {
@@ -825,7 +825,7 @@ void TestGridLoggerWidget::testCorruptedData()
     
     // Widget should still be functional with defaults
     corruptedWidget.show();
-    QTest::qWait(100);
+    QApplication::processEvents(); // Was: QTest::qWait(100)
     
     GridLoggerWidget::LoggerOptions options = corruptedWidget.getLoggerOptions();
     QVERIFY(options.maxRows > 0);
@@ -890,7 +890,7 @@ void TestGridLoggerWidget::addSampleData()
         simulatePacketArrival(packet);
     }
     
-    QTest::qWait(100);
+    QApplication::processEvents(); // Was: QTest::qWait(100)
 }
 
 void TestGridLoggerWidget::simulatePacketArrival(const QHash<QString, QVariant>& fieldValues)

@@ -1,4 +1,7 @@
 #include "chart_3d_widget.h"
+
+#if HAS_QT3D
+
 #include "../../../logging/logger.h"
 #include <QApplication>
 #include <QVBoxLayout>
@@ -863,3 +866,4 @@ QStringList Chart3DWidget::getSeries3DList() const
     qCDebug(chart3DWidget) << "Getting 3D series list - TODO: Implementation needed";
     return QStringList();
 }
+#endif // HAS_QT3D

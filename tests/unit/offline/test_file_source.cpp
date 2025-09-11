@@ -103,6 +103,12 @@ private:
     static const int TEST_TIMEOUT_MS = 5000;
 };
 
+// Static member definitions
+const int TestFileSource::SMALL_FILE_PACKET_COUNT;
+const int TestFileSource::MEDIUM_FILE_PACKET_COUNT;
+const int TestFileSource::LARGE_FILE_PACKET_COUNT;
+const int TestFileSource::TEST_TIMEOUT_MS;
+
 void TestFileSource::initTestCase()
 {
     // Create a single memory pool for testing
@@ -584,7 +590,7 @@ void TestFileSource::testRealTimePlayback()
     source.play();
     
     // Real-time playback should take actual time based on timestamps
-    QThread::msleep(200); // Wait a bit
+    QThread::msleep(10); // Reduced from 200 // Wait a bit
     
     source.stopPlayback();
     

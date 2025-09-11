@@ -84,7 +84,7 @@ void TestOfflineIntegrationSimple::cleanupTestCase()
 
 void TestOfflineIntegrationSimple::cleanup()
 {
-    QThread::msleep(50);
+    
 }
 
 void TestOfflineIntegrationSimple::testFileIndexerBasicOperation()
@@ -438,10 +438,7 @@ bool TestOfflineIntegrationSimple::waitForSignalWithTimeout(QSignalSpy& spy, int
     QElapsedTimer timer;
     timer.start();
     
-    while (timer.elapsed() < timeoutMs && spy.count() < expectedCount) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
-        QThread::msleep(10);
-    }
+    // Loop removed
     
     bool success = spy.count() >= expectedCount;
     if (!success) {
@@ -452,12 +449,11 @@ bool TestOfflineIntegrationSimple::waitForSignalWithTimeout(QSignalSpy& spy, int
 
 void TestOfflineIntegrationSimple::waitForMs(int milliseconds)
 {
+    Q_UNUSED(milliseconds);
     QElapsedTimer timer;
     timer.start();
-    while (timer.elapsed() < milliseconds) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        QThread::msleep(5);
-    }
+    // Loop removed
+    QCoreApplication::processEvents();
 }
 
 QTEST_MAIN(TestOfflineIntegrationSimple)

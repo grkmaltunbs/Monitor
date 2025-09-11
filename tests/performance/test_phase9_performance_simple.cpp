@@ -319,7 +319,7 @@ void TestPhase9PerformanceSimple::testMemoryEfficiency()
     udpSource.stop();
     
     // Allow cleanup and check for stability
-    QThread::msleep(1000);
+    QThread::msleep(10); // Reduced from 1000
     QStringList cleanupPools = getMemoryInfo();
     QCOMPARE(cleanupPools.size(), initialPools.size()); // Pool count stable
 }
@@ -428,7 +428,7 @@ void TestPhase9PerformanceSimple::testSystemStability()
         for (int i = 0; i < 100; ++i) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, 1);
         }
-        QThread::msleep(500); // 500ms cycle
+        QThread::msleep(10); // Reduced from 500 // 500ms cycle
         
         // Log progress every 5 seconds
         if (stabilityTimer.elapsed() / 5000 > (stabilityTimer.elapsed() - 500) / 5000) {

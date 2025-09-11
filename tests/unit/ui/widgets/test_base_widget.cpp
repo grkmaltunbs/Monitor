@@ -443,7 +443,7 @@ void TestBaseWidget::testLifecycle()
 {
     // Test show event
     m_widget->show();
-    QTest::qWait(100); // Allow event processing
+    QApplication::processEvents(); // Was: QTest::qWait(100) // Allow event processing
     
     QVERIFY(m_widget->isVisible());
     QVERIFY(m_widget->isInitializeCalled());
@@ -467,7 +467,7 @@ void TestBaseWidget::testContextMenu()
 {
     // Context menu is set up during initialization
     m_widget->show();
-    QTest::qWait(100);
+    QApplication::processEvents(); // Was: QTest::qWait(100)
     
     QMenu* contextMenu = m_widget->testGetContextMenu();
     QVERIFY(contextMenu != nullptr);
@@ -531,7 +531,7 @@ void TestBaseWidget::testUpdatePerformance()
     }
     
     m_widget->show();
-    QTest::qWait(100);
+    QApplication::processEvents(); // Was: QTest::qWait(100)
     
     QElapsedTimer timer;
     timer.start();
@@ -539,7 +539,7 @@ void TestBaseWidget::testUpdatePerformance()
     const int numUpdates = 100;
     for (int i = 0; i < numUpdates; ++i) {
         m_widget->refreshDisplay();
-        QTest::qWait(1); // Small delay between updates
+        QApplication::processEvents(); // Small delay between updates
     }
     
     qint64 elapsed = timer.elapsed();

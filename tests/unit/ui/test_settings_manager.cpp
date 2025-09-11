@@ -15,32 +15,40 @@
 #include <QStandardPaths>
 #include <QCoreApplication>
 #include <QtConcurrent>
-#include "src/ui/managers/settings_manager.h"
+#include <QMainWindow>
+#include "../../../src/ui/managers/settings_manager.h"
+#include "../../../mainwindow.h"
+#include "../../../src/ui/managers/tab_manager.h"
+
+// Forward declaration
+class MainWindow;
 
 // Mock classes for testing
-class MockMainWindow : public QObject
+class MockMainWindow : public MainWindow
 {
     Q_OBJECT
 public:
-    MockMainWindow() : m_geometry(100, 100, 800, 600), m_maximized(false) {}
+    MockMainWindow() : MainWindow(nullptr), m_maximized(false) {
+        setGeometry(100, 100, 800, 600);
+    }
     
-    QRect geometry() const { return m_geometry; }
-    void setGeometry(const QRect &rect) { m_geometry = rect; }
     bool isMaximized() const { return m_maximized; }
     void setMaximized(bool max) { m_maximized = max; }
     
 private:
-    QRect m_geometry;
     bool m_maximized;
 };
 
-class MockTabManager : public QObject  
+// Forward declaration
+class TabManager;
+
+class MockTabManager : public TabManager  
 {
     Q_OBJECT
 public:
-    MockTabManager() : m_activeTab("tab1"), m_tabCount(3) {}
+    MockTabManager() : TabManager(nullptr), m_activeTab("tab1"), m_tabCount(3) {}
     
-    QString activeTab() const { return m_activeTab; }
+    QString getActiveTabId() const { return m_activeTab; }
     void setActiveTab(const QString &tab) { m_activeTab = tab; }
     int tabCount() const { return m_tabCount; }
     void setTabCount(int count) { m_tabCount = count; }
@@ -219,7 +227,8 @@ void TestSettingsManager::initTestCase()
 {
     if (!QApplication::instance()) {
         int argc = 1;
-        char *argv[] = {"test"};
+        char arg0[] = "test";
+        char *argv[] = {arg0};
         new QApplication(argc, argv);
     }
     
@@ -590,7 +599,7 @@ void TestSettingsManager::testTabManagerState()
     m_settingsManager->restoreTabManagerState(&restoredTabManager);
     
     // Verify restoration
-    QCOMPARE(restoredTabManager.activeTab(), QString("test_tab"));
+    QCOMPARE(restoredTabManager.getActiveTabId(), QString("test_tab"));
 }
 
 void TestSettingsManager::testUIStatePersistence()
@@ -618,7 +627,7 @@ void TestSettingsManager::testUIStatePersistence()
     m_settingsManager->restoreTabManagerState(&restoredTabManager);
     
     // Verify persistence
-    QCOMPARE(restoredTabManager.activeTab(), QString("persistent_tab"));
+    QCOMPARE(restoredTabManager.getActiveTabId(), QString("persistent_tab"));
 }
 
 void TestSettingsManager::testCurrentTheme()

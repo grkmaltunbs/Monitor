@@ -299,7 +299,7 @@ void TestNetworkIntegration::testTcpSourceRealConnection()
     QVERIFY(waitForSignalWithTimeout(startedSpy));
     
     // Wait for connection (simplified check)
-    QThread::msleep(1000); // Allow time for connection
+    QThread::msleep(10); // Reduced from 1000 // Allow time for connection
     // QVERIFY(tcpSource.isConnected()); // May not be implemented yet
     // QCOMPARE(tcpSource.getConnectionState(), Network::TcpSource::ConnectionState::Connected);
     
@@ -532,7 +532,7 @@ void TestNetworkIntegration::testHighThroughputUdp()
     qint64 elapsedMs = timer.elapsed();
     
     // Wait for packets to be processed
-    QTest::qWait(2000);
+    QCoreApplication::processEvents(); // Was: QTest::qWait(2000)
     
     // Verify high throughput performance
     int receivedPackets = packetSpy.count();

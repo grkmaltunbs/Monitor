@@ -344,6 +344,9 @@ void TestLogger::testLogLevels()
     QCOMPARE(entries[0].message, QString("Warning message"));
     QCOMPARE(entries[1].message, QString("Error message"));
     QCOMPARE(entries[2].message, QString("Critical message"));
+    
+    // Clean up: remove the sink we added
+    m_logger->removeSink(memorySink.get());
 }
 
 void TestLogger::testCategoryLevels()
@@ -395,12 +398,22 @@ void TestLogger::testCategoryLevels()
     
     m_logger->removeCategoryLevel("DebugCategory");
     QCOMPARE(m_logger->getCategoryLevel("DebugCategory"), Monitor::Logging::LogLevel::Warning); // Should now return global
+    
+    // Clean up: remove the sink we added and restore global level
+    m_logger->removeSink(memorySink.get());
+    m_logger->setGlobalLogLevel(Monitor::Logging::LogLevel::Info);
 }
 
 void TestLogger::testSinkManagement()
 {
+    // Ensure synchronous mode for this test
+    m_logger->setAsynchronous(false);
+    
     auto sink1 = std::make_shared<Monitor::Logging::MemorySink>(100);
     auto sink2 = std::make_shared<Monitor::Logging::MemorySink>(100);
+    
+    // Clear any existing sinks first
+    m_logger->clearSinks();
     
     m_logger->addSink(sink1);
     m_logger->addSink(sink2);
@@ -426,6 +439,9 @@ void TestLogger::testSinkManagement()
     // Neither sink should receive the third message
     QCOMPARE(sink1->getEntryCount(), size_t(1));
     QCOMPARE(sink2->getEntryCount(), size_t(2));
+    
+    // Restore async mode
+    m_logger->setAsynchronous(true);
 }
 
 void TestLogger::testAsyncLogging()
@@ -434,6 +450,9 @@ void TestLogger::testAsyncLogging()
     QVERIFY(m_logger->isAsynchronous());
     
     auto memorySink = std::make_shared<Monitor::Logging::MemorySink>(1000);
+    
+    // Clear any existing sinks first
+    m_logger->clearSinks();
     m_logger->addSink(memorySink);
     
     // Log some messages
@@ -482,6 +501,10 @@ void TestLogger::testLogMacros()
     QVERIFY(!entries[0].file.isEmpty());
     QVERIFY(!entries[0].function.isEmpty());
     QVERIFY(entries[0].line > 0);
+    
+    // Clean up: remove the sink and restore global level
+    m_logger->removeSink(memorySink.get());
+    m_logger->setGlobalLogLevel(Monitor::Logging::LogLevel::Info);
 }
 
 void TestLogger::testLoggingPerformance()

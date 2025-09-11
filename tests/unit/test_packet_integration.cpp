@@ -165,7 +165,7 @@ private slots:
         QVERIFY(manager.start());
         
         // Wait for some packets to be processed
-        QTest::qWait(200);
+        QCoreApplication::processEvents(); // Was: QTest::qWait(200)
         
         // Check system statistics
         const auto& stats = manager.getSystemStatistics();
@@ -206,7 +206,7 @@ private slots:
         QCOMPARE(startedSpy.count(), 1);
         
         // Wait for statistics updates
-        QTest::qWait(100);
+        QCoreApplication::processEvents(); // Was: QTest::qWait(100)
         
         // Test stop signal
         manager.stop();
@@ -255,7 +255,7 @@ private slots:
         QVERIFY(subId != 0);
         
         // Let the system run for a short time
-        QTest::qWait(500);
+        QCoreApplication::processEvents(); // Was: QTest::qWait(500)
         
         // Verify packets were processed (should get some packets in 500ms)
         QVERIFY(packetsReceived.load() >= 0); // At least should work without crashing
@@ -340,7 +340,7 @@ private slots:
             QVERIFY(manager.createSimulationSource(sourceName, config));
             
             // Let it run briefly
-            QTest::qWait(50);
+            QCoreApplication::processEvents();
             
             // Remove
             QVERIFY(manager.removeSource(sourceName));
@@ -388,7 +388,7 @@ private slots:
         dispatcher->subscribe("ShutdownSub", 0, callback, 0);
         
         // Let system run at high rate
-        QTest::qWait(200);
+        QCoreApplication::processEvents(); // Was: QTest::qWait(200)
         
         // Test shutdown (should handle gracefully)
         manager.stop(); // Should cleanly stop all components

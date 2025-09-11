@@ -10,7 +10,8 @@
 #include <QTimer>
 #include <QJsonObject>
 #include <QJsonDocument>
-#include "src/ui/managers/tab_manager.h"
+#include "../../../src/ui/managers/tab_manager.h"
+#include "../../../src/ui/windows/struct_window.h"
 
 class TestTabManager : public QObject
 {
@@ -79,7 +80,8 @@ void TestTabManager::initTestCase()
     // Set up test environment
     if (!QApplication::instance()) {
         int argc = 1;
-        char *argv[] = {"test"};
+        char arg0[] = "test";
+        char *argv[] = {arg0};
         new QApplication(argc, argv);
     }
     
@@ -439,7 +441,7 @@ void TestTabManager::testTabDragStart()
     
     // Simulate mouse press on first tab
     QPoint tabCenter = tabBar->tabRect(0).center();
-    QMouseEvent pressEvent(QEvent::MouseButtonPress, tabCenter, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QMouseEvent pressEvent(QEvent::MouseButtonPress, QPointF(tabCenter), QPointF(tabCenter), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
     
     // Send event to tab bar (would initiate drag in real implementation)
     QCoreApplication::sendEvent(tabBar, &pressEvent);

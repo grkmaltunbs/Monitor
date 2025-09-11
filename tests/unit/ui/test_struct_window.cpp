@@ -16,7 +16,7 @@
 #include <QTimer>
 #include <QMenu>
 #include <QAction>
-#include "src/ui/windows/struct_window.h"
+#include "../../../src/ui/windows/struct_window.h"
 
 class TestStructWindow : public QObject
 {
@@ -130,7 +130,8 @@ void TestStructWindow::initTestCase()
 {
     if (!QApplication::instance()) {
         int argc = 1;
-        char *argv[] = {"test"};
+        char arg0[] = "test";
+        char *argv[] = {arg0};
         new QApplication(argc, argv);
     }
     
@@ -280,7 +281,7 @@ void TestStructWindow::testRefreshStructures()
     populateWithMockData();
     
     QTreeWidget *treeWidget = m_structWindow->findChild<QTreeWidget*>();
-    int itemCount = treeWidget->topLevelItemCount();
+    (void)treeWidget->topLevelItemCount(); // Use the result to avoid unused variable warning
     
     // Refresh structures
     m_structWindow->refreshStructures();
@@ -323,6 +324,7 @@ void TestStructWindow::testExpandCollapseAll()
             break;
         }
     }
+    (void)hasExpandedItems; // Use the variable to avoid unused warning
     
     // Test collapse all
     m_structWindow->collapseAll();
@@ -511,8 +513,8 @@ void TestStructWindow::testFilterPerformance()
 {
     // Create many structures for performance testing
     for (int i = 0; i < 100; ++i) {
-        QJsonObject struct = createMockStructure(QString("PerfStruct%1").arg(i), "struct");
-        m_structWindow->addStructure(QString("PerfStruct%1").arg(i), struct);
+        QJsonObject structObj = createMockStructure(QString("PerfStruct%1").arg(i), "struct");
+        m_structWindow->addStructure(QString("PerfStruct%1").arg(i), structObj);
     }
     
     QElapsedTimer timer;
@@ -648,7 +650,7 @@ void TestStructWindow::testContextMenuSignals()
         QPoint itemPos = treeWidget->visualItemRect(treeWidget->topLevelItem(0)).center();
         
         // This would normally trigger context menu
-        QContextMenuEvent contextEvent(QContextMenuEvent::Mouse, itemPos);
+        QContextMenuEvent contextEvent(QContextMenuEvent::Mouse, itemPos, QPoint()); // Add global position
         QCoreApplication::sendEvent(treeWidget, &contextEvent);
     }
     
@@ -887,8 +889,8 @@ void TestStructWindow::testLargeStructurePerformance()
     
     // Add many structures
     for (int i = 0; i < 1000; ++i) {
-        QJsonObject struct = createMockStructure(QString("LargeStruct%1").arg(i), "struct");
-        m_structWindow->addStructure(QString("LargeStruct%1").arg(i), struct);
+        QJsonObject structObj = createMockStructure(QString("LargeStruct%1").arg(i), "struct");
+        m_structWindow->addStructure(QString("LargeStruct%1").arg(i), structObj);
     }
     
     qint64 addTime = timer.elapsed();
@@ -905,8 +907,8 @@ void TestStructWindow::testSearchPerformance()
 {
     // Add structures for search testing
     for (int i = 0; i < 500; ++i) {
-        QJsonObject struct = createMockStructure(QString("SearchStruct%1").arg(i), "struct");
-        m_structWindow->addStructure(QString("SearchStruct%1").arg(i), struct);
+        QJsonObject structObj = createMockStructure(QString("SearchStruct%1").arg(i), "struct");
+        m_structWindow->addStructure(QString("SearchStruct%1").arg(i), structObj);
     }
     
     QElapsedTimer timer;
@@ -987,7 +989,7 @@ void TestStructWindow::testConcurrentUpdates()
     });
     
     // Wait for timers
-    QTest::qWait(50);
+    QApplication::processEvents();
     
     // Should handle concurrent updates without issues
     QVERIFY(true);
@@ -1109,7 +1111,7 @@ StructWindow::StructureTreeItem* TestStructWindow::findTreeItem(const QString &t
 
 void TestStructWindow::simulateMouseEvent(QWidget *widget, const QPoint &pos, QEvent::Type type, Qt::MouseButton button)
 {
-    QMouseEvent event(type, pos, button, button, Qt::NoModifier);
+    QMouseEvent event(type, pos, QPoint(), button, button, Qt::NoModifier); // Add global position
     QCoreApplication::sendEvent(widget, &event);
 }
 

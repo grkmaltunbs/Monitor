@@ -666,7 +666,7 @@ void TestSimulationSource::testSimulationStartStop() {
     
     // Should stop generating packets
     int packetsAfterStop = packetSpy.count();
-    QTest::qWait(200); // Wait a bit
+    QCoreApplication::processEvents(); // Was: QTest::qWait(200) // Wait a bit
     QCOMPARE(packetSpy.count(), packetsAfterStop); // Should not increase
 }
 
@@ -685,7 +685,7 @@ void TestSimulationSource::testSimulationPauseResume() {
     QCOMPARE(pausedSpy.count(), 1);
     
     int packetsAfterPause = packetSpy.count();
-    QTest::qWait(200); // Wait while paused
+    QCoreApplication::processEvents(); // Was: QTest::qWait(200) // Wait while paused
     QCOMPARE(packetSpy.count(), packetsAfterPause); // Should not increase
     
     // Resume
@@ -921,7 +921,7 @@ void TestSimulationSource::testInvalidConfiguration() {
     QVERIFY(result);
     
     QSignalSpy packetSpy(&invalidSource, &SimulationSource::packetReady);
-    QTest::qWait(200);
+    QCoreApplication::processEvents(); // Was: QTest::qWait(200)
     
     // Should not generate any packets
     QCOMPARE(packetSpy.count(), 0);
@@ -955,7 +955,7 @@ void TestSimulationSource::testHighFrequencyGeneration() {
     QSignalSpy packetSpy(&highFreqSource, &SimulationSource::packetReady);
     
     highFreqSource.start();
-    QTest::qWait(500); // Wait 500ms
+    QCoreApplication::processEvents(); // Was: QTest::qWait(500) // Wait 500ms
     highFreqSource.stop();
     
     // Should generate many packets (allow some tolerance)
@@ -1073,7 +1073,7 @@ void TestSimulationSource::testVeryHighFrequency() {
     QSignalSpy packetSpy(&veryHighFreqSource, &SimulationSource::packetReady);
     
     veryHighFreqSource.start();
-    QTest::qWait(100); // Wait 100ms
+    QCoreApplication::processEvents(); // Was: QTest::qWait(100) // Wait 100ms
     veryHighFreqSource.stop();
     
     // Should generate many packets, but system limits may apply

@@ -4,6 +4,7 @@
 #include "../display_widget.h"
 #include "chart_common.h"
 
+#if HAS_QT3D
 // Qt 3D includes for 3D rendering
 #include <Qt3DCore/QEntity>
 #include <Qt3DCore/QTransform>
@@ -19,6 +20,7 @@
 #include <Qt3DExtras/QPlaneMesh>
 #include <Qt3DExtras/QPhongMaterial>
 #include <Qt3DExtras/QDiffuseSpecularMaterial>
+#endif // HAS_QT3D
 // Note: Some advanced Qt3D geometry features will be implemented in future iterations
 // #include <Qt3DRender/QMesh>
 // #include <Qt3DRender/QBuffer>
@@ -47,6 +49,8 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+
+#if HAS_QT3D
 
 /**
  * @brief 3D Chart Widget for three-dimensional data visualization
@@ -398,5 +402,33 @@ private:
     void updateMaterialProperties();
     void setupCameraController();
 };
+
+#else // !HAS_QT3D
+
+#include <QLabel>
+#include <QVBoxLayout>
+
+// Stub implementation when Qt3D is not available
+class Chart3DWidget : public DisplayWidget
+{
+    Q_OBJECT
+public:
+    Chart3DWidget(const QString& widgetId, const QString& windowTitle, QWidget* parent = nullptr)
+        : DisplayWidget(widgetId, windowTitle, parent) 
+    {
+        QLabel* label = new QLabel("Qt 3D modules not available.\nPlease install Qt 3D components to use 3D charts.", this);
+        label->setAlignment(Qt::AlignCenter);
+        QVBoxLayout* layout = new QVBoxLayout(this);
+        layout->addWidget(label);
+        setLayout(layout);
+    }
+    
+protected:
+    void updateFieldDisplay(const QString& fieldPath, const QVariant& value) override { Q_UNUSED(fieldPath); Q_UNUSED(value); }
+    void clearFieldDisplay(const QString& fieldPath) override { Q_UNUSED(fieldPath); }
+    void refreshAllDisplays() override {}
+};
+
+#endif // HAS_QT3D
 
 #endif // CHART_3D_WIDGET_H

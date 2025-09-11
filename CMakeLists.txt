@@ -21,8 +21,25 @@ enable_testing()
 include(optimizations/optimized_cmake_flags.cmake)
 
 # Find required packages
-find_package(QT NAMES Qt6 REQUIRED COMPONENTS Core Widgets Test Charts Svg 3DCore 3DRender 3DExtras Network)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Test Charts Svg 3DCore 3DRender 3DExtras Network)
+find_package(QT NAMES Qt6 REQUIRED COMPONENTS Core Widgets Test Charts Svg Network Concurrent)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Test Charts Svg Network Concurrent)
+
+# Try to find Qt 3D components (might be named differently)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS 3DCore 3DRender 3DExtras)
+if(Qt63DCore_FOUND)
+    message(STATUS "Found Qt 3D modules")
+    set(QT3D_AVAILABLE TRUE)
+else()
+    # Try alternative naming
+    find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Quick3D QUIET)
+    if(Qt6_Quick3D_FOUND)
+        message(STATUS "Found Qt Quick 3D")
+        set(QT3D_AVAILABLE TRUE)
+    else()
+        message(WARNING "Qt 3D modules not found - 3D features will be disabled")
+        set(QT3D_AVAILABLE FALSE)
+    endif()
+endif()
 
 # Find nlohmann/json for JSON serialization (optional for now)
 find_package(nlohmann_json 3.2.0 QUIET)
@@ -308,11 +325,27 @@ target_link_libraries(MonitorUI
     PUBLIC Qt${QT_VERSION_MAJOR}::Widgets
     PUBLIC Qt${QT_VERSION_MAJOR}::Charts
     PUBLIC Qt${QT_VERSION_MAJOR}::Svg
-    PUBLIC Qt${QT_VERSION_MAJOR}::3DCore
-    PUBLIC Qt${QT_VERSION_MAJOR}::3DRender
-    PUBLIC Qt${QT_VERSION_MAJOR}::3DExtras
     PUBLIC Qt${QT_VERSION_MAJOR}::Network
+    PUBLIC Qt${QT_VERSION_MAJOR}::Concurrent
 )
+
+# Conditionally link 3D libraries if available
+if(QT3D_AVAILABLE)
+    if(Qt63DCore_FOUND)
+        target_link_libraries(MonitorUI 
+            PUBLIC Qt${QT_VERSION_MAJOR}::3DCore
+            PUBLIC Qt${QT_VERSION_MAJOR}::3DRender
+            PUBLIC Qt${QT_VERSION_MAJOR}::3DExtras
+        )
+    elseif(Qt6_Quick3D_FOUND)
+        target_link_libraries(MonitorUI 
+            PUBLIC Qt${QT_VERSION_MAJOR}::Quick3D
+        )
+    endif()
+    target_compile_definitions(MonitorUI PUBLIC HAS_QT3D=1)
+else()
+    target_compile_definitions(MonitorUI PUBLIC HAS_QT3D=0)
+endif()
 target_include_directories(MonitorUI PUBLIC include src)
 
 # Main application sources
@@ -368,6 +401,7 @@ set(TEST_SOURCES
     tests/unit/ui/test_tab_manager.cpp
     tests/unit/ui/test_struct_window.cpp
     tests/unit/ui/test_settings_manager.cpp
+    tests/unit/ui/test_settings_manager_simple.cpp
     tests/unit/ui/test_window_manager.cpp
     tests/unit/ui/test_main_window.cpp
     tests/unit/ui/test_ui_integration.cpp

@@ -15,7 +15,7 @@
 #include <QPoint>
 #include <QSize>
 #include <QRect>
-#include "src/ui/managers/window_manager.h"
+#include "../../../src/ui/managers/window_manager.h"
 
 class TestWindowManager : public QObject
 {
@@ -142,7 +142,8 @@ void TestWindowManager::initTestCase()
 {
     if (!QApplication::instance()) {
         int argc = 1;
-        char *argv[] = {"test"};
+        char arg0[] = "test";
+        char *argv[] = {arg0};
         new QApplication(argc, argv);
     }
     
@@ -1194,7 +1195,7 @@ void TestWindowManager::testConcurrentOperations()
     });
     
     // Wait for all operations to complete
-    QTest::qWait(100);
+    QApplication::processEvents(); // Was: QTest::qWait(100)
     
     // All windows should still exist
     QVERIFY(m_windowManager->getWindow(windowId1) != nullptr);
@@ -1252,7 +1253,7 @@ bool TestWindowManager::verifyWindowInMode(const QString &windowId, WindowManage
 
 void TestWindowManager::simulateUserInteraction(QWidget *widget, const QPoint &pos)
 {
-    QMouseEvent event(QEvent::MouseButtonPress, pos, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QMouseEvent event(QEvent::MouseButtonPress, pos, QPoint(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
     QCoreApplication::sendEvent(widget, &event);
 }
 

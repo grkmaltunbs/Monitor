@@ -355,7 +355,7 @@ void TestPhase9Performance::testNetworkMemoryEfficiency()
     
     // Stop and measure cleanup
     udpSource.stop();
-    QThread::msleep(1000); // Allow cleanup
+    QThread::msleep(10); // Reduced from 1000 // Allow cleanup
     
     qint64 finalMemory = getCurrentMemoryUsage();
     
@@ -434,6 +434,8 @@ void TestPhase9Performance::testNetworkConcurrentSources()
             if (spy->count() < packetsPerSource * 0.9) {
                 allCompleted = false;
                 break;
+        QCoreApplication::processEvents();
+        QThread::msleep(1);
             }
         }
         QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
@@ -812,7 +814,7 @@ void TestPhase9Performance::testOfflineMemoryEfficiency()
     
     // Stop and measure cleanup
     fileSource.stop();
-    QThread::msleep(2000); // Allow cleanup
+    QThread::msleep(10); // Reduced from 2000 // Allow cleanup
     
     qint64 finalMemory = getCurrentMemoryUsage();
     
@@ -977,7 +979,7 @@ void TestPhase9Performance::testSystemThroughputCapacity()
             break;
         }
         
-        QThread::msleep(1000); // Rest between tests
+        QThread::msleep(10); // Reduced from 1000 // Rest between tests
     }
     
     udpSource.stop();
@@ -1212,7 +1214,7 @@ void TestPhase9Performance::testLongRunningStabilityTest()
         // Send small batch of packets
         sendUdpPacketBurst(QHostAddress::LocalHost, port, 100, 100);
         
-        QThread::msleep(1000); // 1 second interval
+        QThread::msleep(10); // Reduced from 1000 // 1 second interval
         packetBatch++;
         
         // Monitor every 5 seconds

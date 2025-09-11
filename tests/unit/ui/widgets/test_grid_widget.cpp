@@ -99,7 +99,8 @@ void TestGridWidget::init()
     
     // Show widget to trigger initialization
     m_widget->show();
-    QTest::qWait(100); // Allow initialization to complete
+    // Process events instead of waiting
+    QApplication::processEvents();
 }
 
 void TestGridWidget::cleanup()
@@ -309,7 +310,7 @@ void TestGridWidget::testValueDisplay()
         simulateFieldUpdate(fieldPath, testValue);
     }
     
-    QTest::qWait(200); // Allow updates to process
+    QApplication::processEvents(); // Was: QTest::qWait(200) // Allow updates to process
     
     // Verify values are displayed (would need access to table internals)
     // In practice, you'd verify the table contents match expected values
@@ -332,7 +333,7 @@ void TestGridWidget::testSortingFunctionality()
 void TestGridWidget::testContextMenu()
 {
     m_widget->show();
-    QTest::qWait(100);
+    QApplication::processEvents(); // Was: QTest::qWait(100)
     
     // Context menu should be available
     QMenu* contextMenu = m_widget->getContextMenuForTesting();
@@ -450,7 +451,7 @@ void TestGridWidget::testExportFunctionality()
     simulateFieldUpdate("test.double.field", 45.67);
     simulateFieldUpdate("test.string.field", "test_data");
     
-    QTest::qWait(100);
+    QApplication::processEvents(); // Was: QTest::qWait(100)
     
     // Test export methods exist and don't crash
     // Note: These would typically write to temporary files in real tests
@@ -476,9 +477,9 @@ void TestGridWidget::testRowHighlighting()
     
     // Simulate rapid value changes to test highlighting
     simulateFieldUpdate("test.int.field", 100);
-    QTest::qWait(50);
+    QApplication::processEvents();
     simulateFieldUpdate("test.int.field", 200);
-    QTest::qWait(50);
+    QApplication::processEvents();
     simulateFieldUpdate("test.int.field", 300);
     
     // Animation should be active (hard to verify in unit test)
@@ -536,7 +537,7 @@ void TestGridWidget::testKeyboardNavigation()
     
     m_widget->show();
     m_widget->setFocus();
-    QTest::qWait(100);
+    QApplication::processEvents(); // Was: QTest::qWait(100)
     
     // Test keyboard navigation (basic key events)
     QTest::keyClick(m_widget, Qt::Key_Tab);
@@ -578,7 +579,7 @@ void TestGridWidget::testManyFieldsPerformance()
         simulateFieldUpdate(fieldPath, value);
     }
     
-    QTest::qWait(500); // Allow updates to process
+    QApplication::processEvents(); // Was: QTest::qWait(500) // Allow updates to process
     qint64 updateTime = timer.elapsed();
     
     // Performance should be reasonable
@@ -605,7 +606,7 @@ void TestGridWidget::testUpdatePerformance()
         }
         
         if (i % 100 == 0) {
-            QTest::qWait(10); // Periodic pause
+            QApplication::processEvents(); // Periodic pause
         }
     }
     
@@ -641,7 +642,7 @@ void TestGridWidget::testMemoryUsage()
             QString fieldPath = QString("memory.test.field_%1").arg(i);
             simulateFieldUpdate(fieldPath, QVariant(update * i * 3.14159));
         }
-        QTest::qWait(10);
+        QApplication::processEvents();
     }
     
     // Clear fields to test cleanup
@@ -716,7 +717,7 @@ void TestGridWidget::testCorruptedData()
     
     // Widget should still be functional
     corruptedWidget.show();
-    QTest::qWait(100);
+    QApplication::processEvents(); // Was: QTest::qWait(100)
     
     corruptedWidget.addField("recovery.field", 100, QJsonObject());
     QCOMPARE(corruptedWidget.getFieldCount(), 1);
@@ -745,7 +746,7 @@ void TestGridWidget::addSampleFields()
     boolField["size"] = 1;
     m_widget->addField("test.bool.field", 103, boolField);
     
-    QTest::qWait(100); // Allow field addition to complete
+    QApplication::processEvents(); // Was: QTest::qWait(100) // Allow field addition to complete
 }
 
 void TestGridWidget::verifyTableStructure()

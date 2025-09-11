@@ -937,7 +937,7 @@ void TestPerformanceDashboard::testRealTimeUpdates()
     dashboard->startRealTimeUpdates(100); // 100ms intervals
     
     // Wait for several updates
-    QTest::qWait(500);
+    QApplication::processEvents(); // Was: QTest::qWait(500)
     
     // Should have received multiple updates
     QVERIFY(updateSpy.count() >= 4);
@@ -979,7 +979,7 @@ void TestPerformanceDashboard::testDataCollection()
     // Simulate data sources
     dashboard->onWidgetCreated("test_widget", "TestWidget");
     
-    QTest::qWait(200);
+    QApplication::processEvents(); // Was: QTest::qWait(200)
     
     // Should have received system metrics
     QVERIFY(systemSpy.count() >= 1);
@@ -1568,9 +1568,11 @@ void TestPerformanceDashboard::testLongRunningMonitoring()
             // Verify dashboard is still functional
             QVERIFY(dashboard->isMonitoringActive());
             QVERIFY(dashboard->isInitialized());
+        QCoreApplication::processEvents();
+        QThread::msleep(1);
         }
         
-        QTest::qWait(10); // 10ms between updates
+        QApplication::processEvents(); // 10ms between updates
     }
     
     dashboard->onStopMonitoring();
@@ -1720,7 +1722,7 @@ void TestPerformanceDashboard::testReportGeneration()
     dashboard->onStartMonitoring();
     
     // Let some data accumulate
-    QTest::qWait(500);
+    QApplication::processEvents(); // Was: QTest::qWait(500)
     
     // Generate performance report
     QString reportPath = QDir::temp().filePath("performance_report.html");
@@ -1865,7 +1867,7 @@ void TestPerformanceDashboard::addTestData()
 
 void TestPerformanceDashboard::waitForUpdate()
 {
-    QTest::qWait(50); // Wait for UI updates
+    QApplication::processEvents(); // Wait for UI updates
 }
 
 void TestPerformanceDashboard::simulateSystemLoad()

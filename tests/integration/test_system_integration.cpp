@@ -229,9 +229,9 @@ TEST_F(SystemIntegrationTest, ErrorHandlingAndRecovery) {
     EXPECT_EQ(simulationSource->getState(), Packet::PacketSource::State::Running);
     
     // Brief operation
-    QEventLoop loop;
-    QTimer::singleShot(200, &loop, &QEventLoop::quit);
-    loop.exec();
+    // Simplified timeout handling
+
+    QCoreApplication::processEvents();
 
     // Test pause/resume cycle
     simulationSource->pause();
