@@ -26,6 +26,7 @@ class TabManager;
 class StructWindow;
 class SettingsManager;
 class PerformanceDashboard;
+class AddStructWindow;
 
 // Forward declarations for Test Framework
 namespace Monitor {
@@ -39,6 +40,9 @@ class TestRunner;
 }
 namespace Packet {
 class SimulationSource;
+}
+namespace Parser {
+class StructureManager;
 }
 }
 
@@ -178,6 +182,8 @@ private:
     TabManager *m_tabManager;
     SettingsManager *m_settingsManager;
     PerformanceDashboard *m_performanceDashboard;
+    AddStructWindow *m_addStructWindow;
+    Monitor::Parser::StructureManager *m_structureManager;
     
     // Test Framework integration
     Monitor::UI::TestFramework::TestManagerWindow *m_testManagerWindow;

@@ -401,6 +401,9 @@ QMdiSubWindow* WindowManager::createMDISubWindow(QWidget *content, const QString
                              Qt::WindowSystemMenuHint |
                              Qt::WindowMinMaxButtonsHint);
     
+    // Show the window
+    subWindow->show();
+    
     return subWindow;
 }
 

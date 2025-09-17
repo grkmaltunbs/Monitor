@@ -17,6 +17,13 @@
 #include <QGraphicsEffect>
 #include <QHash>
 #include <QMutex>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 /**
  * @brief Grid widget for displaying field values in a two-column table format
@@ -149,8 +156,6 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
-
-    // Drag and drop enhancements
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dragMoveEvent(QDragMoveEvent* event) override;
     void dropEvent(QDropEvent* event) override;
@@ -191,6 +196,10 @@ private:
     void updateFieldRow(const QString& fieldPath, const QVariant& value);
     FieldRow* findFieldRow(const QString& fieldPath);
     const FieldRow* findFieldRow(const QString& fieldPath) const;
+    
+    // Drag and drop helpers
+    void handleDroppedField(const QString& fieldPath, const QJsonObject& fieldData);
+    void extractPrimitiveFields(const QJsonObject& structData, const QString& basePath, QStringList& primitiveFields);
 
     // Visual effects
     void animateValueChange(FieldRow* row, const QVariant& newValue);

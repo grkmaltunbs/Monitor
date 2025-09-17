@@ -170,6 +170,161 @@ void NamedType::accept(ASTVisitor& visitor) {
     visitor.visit(*this);
 }
 
+// TypedefDeclaration implementation
+TypedefDeclaration::TypedefDeclaration(const std::string& name, std::unique_ptr<TypeNode> underlyingType)
+    : ASTNode(NodeType::TYPEDEF_DECLARATION), m_name(name), m_underlyingType(std::move(underlyingType)) {}
+
+void TypedefDeclaration::accept(ASTVisitor& visitor) {
+    visitor.visit(*this);
+}
+
+// SourceLocation implementation
+std::string SourceLocation::toString() const {
+    return filename + ":" + std::to_string(line) + ":" + std::to_string(column);
+}
+
+// Additional missing implementations for PrimitiveType
+bool PrimitiveType::isSigned() const {
+    switch (m_kind) {
+        case Kind::CHAR: // char signedness is implementation-defined, assuming signed
+        case Kind::SIGNED_CHAR:
+        case Kind::SHORT:
+        case Kind::INT:
+        case Kind::LONG:
+        case Kind::LONG_LONG:
+        case Kind::FLOAT:
+        case Kind::DOUBLE:
+        case Kind::LONG_DOUBLE:
+            return true;
+        case Kind::UNSIGNED_CHAR:
+        case Kind::UNSIGNED_SHORT:
+        case Kind::UNSIGNED_INT:
+        case Kind::UNSIGNED_LONG:
+        case Kind::UNSIGNED_LONG_LONG:
+        case Kind::BOOL:
+            return false;
+        case Kind::VOID:
+        default:
+            return false;
+    }
+}
+
+bool PrimitiveType::isInteger() const {
+    switch (m_kind) {
+        case Kind::CHAR:
+        case Kind::SIGNED_CHAR:
+        case Kind::UNSIGNED_CHAR:
+        case Kind::SHORT:
+        case Kind::UNSIGNED_SHORT:
+        case Kind::INT:
+        case Kind::UNSIGNED_INT:
+        case Kind::LONG:
+        case Kind::UNSIGNED_LONG:
+        case Kind::LONG_LONG:
+        case Kind::UNSIGNED_LONG_LONG:
+        case Kind::BOOL:
+            return true;
+        case Kind::FLOAT:
+        case Kind::DOUBLE:
+        case Kind::LONG_DOUBLE:
+        case Kind::VOID:
+        default:
+            return false;
+    }
+}
+
+bool PrimitiveType::isFloatingPoint() const {
+    switch (m_kind) {
+        case Kind::FLOAT:
+        case Kind::DOUBLE:
+        case Kind::LONG_DOUBLE:
+            return true;
+        default:
+            return false;
+    }
+}
+
+PrimitiveType::Kind PrimitiveType::stringToKind(const std::string& typeName) {
+    if (typeName == "void") return Kind::VOID;
+    if (typeName == "char") return Kind::CHAR;
+    if (typeName == "signed char") return Kind::SIGNED_CHAR;
+    if (typeName == "unsigned char") return Kind::UNSIGNED_CHAR;
+    if (typeName == "short") return Kind::SHORT;
+    if (typeName == "unsigned short") return Kind::UNSIGNED_SHORT;
+    if (typeName == "int") return Kind::INT;
+    if (typeName == "unsigned int") return Kind::UNSIGNED_INT;
+    if (typeName == "long") return Kind::LONG;
+    if (typeName == "unsigned long") return Kind::UNSIGNED_LONG;
+    if (typeName == "long long") return Kind::LONG_LONG;
+    if (typeName == "unsigned long long") return Kind::UNSIGNED_LONG_LONG;
+    if (typeName == "float") return Kind::FLOAT;
+    if (typeName == "double") return Kind::DOUBLE;
+    if (typeName == "long double") return Kind::LONG_DOUBLE;
+    if (typeName == "bool" || typeName == "_Bool") return Kind::BOOL;
+    return Kind::VOID; // Default fallback
+}
+
+std::string PrimitiveType::kindToString(Kind kind) {
+    switch (kind) {
+        case Kind::VOID: return "void";
+        case Kind::CHAR: return "char";
+        case Kind::SIGNED_CHAR: return "signed char";
+        case Kind::UNSIGNED_CHAR: return "unsigned char";
+        case Kind::SHORT: return "short";
+        case Kind::UNSIGNED_SHORT: return "unsigned short";
+        case Kind::INT: return "int";
+        case Kind::UNSIGNED_INT: return "unsigned int";
+        case Kind::LONG: return "long";
+        case Kind::UNSIGNED_LONG: return "unsigned long";
+        case Kind::LONG_LONG: return "long long";
+        case Kind::UNSIGNED_LONG_LONG: return "unsigned long long";
+        case Kind::FLOAT: return "float";
+        case Kind::DOUBLE: return "double";
+        case Kind::LONG_DOUBLE: return "long double";
+        case Kind::BOOL: return "bool";
+        default: return "unknown";
+    }
+}
+
+// BitfieldDeclaration additional methods
+uint64_t BitfieldDeclaration::getBitMask() const {
+    if (m_bitWidth == 0 || m_bitWidth > 64) {
+        return 0;
+    }
+    return (1ULL << m_bitWidth) - 1;
+}
+
+// ArrayType constructor for multidimensional arrays
+ArrayType::ArrayType(std::unique_ptr<TypeNode> elementType, const std::vector<size_t>& dimensions)
+    : TypeNode(NodeType::ARRAY_TYPE), m_elementType(std::move(elementType)), m_dimensions(dimensions) {
+
+    m_arraySize = 1;
+    for (size_t dim : dimensions) {
+        m_arraySize *= dim;
+    }
+}
+
+// UnionDeclaration missing methods
+const FieldDeclaration* UnionDeclaration::findMember(const std::string& name) const {
+    for (const auto& member : m_members) {
+        if (member && member->getName() == name) {
+            return member.get();
+        }
+    }
+    return nullptr;
+}
+
+// StructDeclaration missing methods
+void StructDeclaration::addDependency(const std::string& typeName) {
+    // Check if dependency already exists
+    for (const auto& dep : m_dependencies) {
+        if (dep == typeName) {
+            return; // Already exists
+        }
+    }
+    m_dependencies.push_back(typeName);
+}
+
 } // namespace AST
 } // namespace Parser
 } // namespace Monitor

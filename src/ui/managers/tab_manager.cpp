@@ -113,6 +113,31 @@ QString TabManager::createTab(const QString &name)
     tabData.structWindow = createStructWindow(tabId);
     tabData.windowManager = createWindowManager(tabId);
     
+    // Connect WindowManager's container to the tab content
+    if (tabData.windowManager && tabData.content) {
+        QLayout* layout = tabData.content->layout();
+        if (layout) {
+            // The content has a VBoxLayout with a splitter, get the splitter
+            QSplitter* splitter = nullptr;
+            for (int i = 0; i < layout->count(); ++i) {
+                QLayoutItem* item = layout->itemAt(i);
+                if (item && item->widget()) {
+                    splitter = qobject_cast<QSplitter*>(item->widget());
+                    if (splitter) break;
+                }
+            }
+            
+            if (splitter) {
+                // Add the WindowManager's container to the splitter
+                QWidget* container = tabData.windowManager->getContainerWidget();
+                if (container) {
+                    splitter->addWidget(container);
+                    qCDebug(tabManager) << "Added WindowManager container to tab splitter";
+                }
+            }
+        }
+    }
+    
     // Add to tab widget
     int index = m_tabWidget->addTab(tabData.content, tabName);
     m_tabs[tabId] = tabData;
@@ -235,6 +260,30 @@ int TabManager::getTabIndex(const QString &tabId) const
         }
     }
     return -1;
+}
+
+WindowManager* TabManager::getWindowManager(const QString &tabId) const
+{
+    if (m_tabs.contains(tabId)) {
+        return m_tabs[tabId].windowManager;
+    }
+    return nullptr;
+}
+
+StructWindow* TabManager::getStructWindow(const QString &tabId) const
+{
+    if (m_tabs.contains(tabId)) {
+        return m_tabs[tabId].structWindow;
+    }
+    return nullptr;
+}
+
+QWidget* TabManager::getTabContent(const QString &tabId) const
+{
+    if (m_tabs.contains(tabId)) {
+        return m_tabs[tabId].content;
+    }
+    return nullptr;
 }
 
 bool TabManager::canCreateTab() const

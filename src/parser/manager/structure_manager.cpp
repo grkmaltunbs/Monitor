@@ -1,5 +1,9 @@
 #include "structure_manager.h"
+#include "../parser/struct_parser.h"
 #include <QDebug>
+#include <QFileInfo>
+#include <QTextStream>
+#include <QFile>
 
 namespace Monitor {
 namespace Parser {
@@ -9,8 +13,9 @@ StructureManager::StructureManager(QObject* parent)
     , m_compilerType(Layout::AlignmentRules::CompilerType::AUTO_DETECT)
     , m_architecture(Layout::AlignmentRules::Architecture::AUTO_DETECT)
 {
-    // Initialize core components when we have implementations
-    qDebug() << "StructureManager initialized";
+    // Initialize the parser
+    m_parser = std::make_unique<StructParser>();
+    qDebug() << "StructureManager initialized with real parser";
 }
 
 StructureManager::~StructureManager() {
@@ -18,73 +23,194 @@ StructureManager::~StructureManager() {
 }
 
 StructureManager::ParseResult StructureManager::parseStructures(const std::string& sourceCode) {
-    Q_UNUSED(sourceCode);
+    clearErrors();
+
     ParseResult result;
-    result.success = false;
-    result.errors.push_back("Parser implementation not yet available");
+
+    try {
+        // Use the real parser
+        auto parseResult = m_parser->parse(sourceCode);
+
+        result.success = parseResult.success;
+        result.errors = parseResult.errors;
+        result.warnings = parseResult.warnings;
+        result.structuresParsed = parseResult.structures.size();
+        result.unionsParsed = parseResult.unions.size();
+        result.typedefsParsed = parseResult.typedefs.size();
+        result.parseTime = parseResult.parseTime;
+
+        if (parseResult.success) {
+            // Store parsed structures
+            for (auto& structDecl : parseResult.structures) {
+                if (structDecl) {
+                    std::string name = structDecl->getName();
+                    m_structures[name] = std::move(structDecl);
+                    qDebug() << "Stored structure:" << QString::fromStdString(name);
+                }
+            }
+
+            // Store parsed unions
+            for (auto& unionDecl : parseResult.unions) {
+                if (unionDecl) {
+                    std::string name = unionDecl->getName();
+                    m_unions[name] = std::move(unionDecl);
+                    qDebug() << "Stored union:" << QString::fromStdString(name);
+                }
+            }
+
+            // Store parsed typedefs
+            for (auto& typedefDecl : parseResult.typedefs) {
+                if (typedefDecl) {
+                    std::string name = typedefDecl->getName();
+                    m_typedefs[name] = std::move(typedefDecl);
+                    qDebug() << "Stored typedef:" << QString::fromStdString(name);
+                }
+            }
+
+            // Emit signal for successful parsing
+            emit parseCompleted(result);
+        } else {
+            // Copy errors to member variable for later retrieval
+            for (const auto& error : parseResult.errors) {
+                StructureError structError(error, "", "", 0, 0);
+                m_errors.push_back(structError);
+            }
+        }
+
+    } catch (const std::exception& e) {
+        result.success = false;
+        result.errors.push_back("Exception during parsing: " + std::string(e.what()));
+
+        StructureError structError(e.what(), "", "", 0, 0);
+        m_errors.push_back(structError);
+    }
+
     return result;
 }
 
 StructureManager::ParseResult StructureManager::parseStructuresFromFile(const QString& filePath) {
-    Q_UNUSED(filePath);
-    ParseResult result;
-    result.success = false;
-    result.errors.push_back("Parser implementation not yet available");
-    return result;
+    QFileInfo fileInfo(filePath);
+    if (!fileInfo.exists()) {
+        ParseResult result;
+        result.success = false;
+        result.errors.push_back("File does not exist: " + filePath.toStdString());
+        return result;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        ParseResult result;
+        result.success = false;
+        result.errors.push_back("Cannot open file: " + filePath.toStdString());
+        return result;
+    }
+
+    QTextStream in(&file);
+    QString content = in.readAll();
+
+    return parseStructures(content.toStdString());
 }
 
 StructureManager::ParseResult StructureManager::parseStructuresFromFiles(const QStringList& filePaths) {
-    Q_UNUSED(filePaths);
-    ParseResult result;
-    result.success = false;
-    result.errors.push_back("Parser implementation not yet available");
-    return result;
+    ParseResult combinedResult;
+    combinedResult.success = true;
+
+    for (const QString& filePath : filePaths) {
+        auto result = parseStructuresFromFile(filePath);
+
+        // Combine results
+        combinedResult.errors.insert(combinedResult.errors.end(),
+                                   result.errors.begin(), result.errors.end());
+        combinedResult.warnings.insert(combinedResult.warnings.end(),
+                                     result.warnings.begin(), result.warnings.end());
+        combinedResult.structuresParsed += result.structuresParsed;
+        combinedResult.unionsParsed += result.unionsParsed;
+        combinedResult.typedefsParsed += result.typedefsParsed;
+        combinedResult.parseTime += result.parseTime;
+
+        if (!result.success) {
+            combinedResult.success = false;
+        }
+    }
+
+    return combinedResult;
 }
 
 bool StructureManager::hasStructure(const std::string& name) const {
-    Q_UNUSED(name);
-    return false;
+    return m_structures.find(name) != m_structures.end();
 }
 
 std::shared_ptr<const AST::StructDeclaration> StructureManager::getStructure(const std::string& name) const {
-    Q_UNUSED(name);
+    auto it = m_structures.find(name);
+    if (it != m_structures.end()) {
+        return it->second;
+    }
     return nullptr;
 }
 
 std::vector<std::string> StructureManager::getStructureNames() const {
-    return {};
+    std::vector<std::string> names;
+    for (const auto& pair : m_structures) {
+        names.push_back(pair.first);
+    }
+    return names;
 }
 
 std::vector<StructureManager::StructureInfo> StructureManager::getStructureInfos() const {
-    return {};
+    std::vector<StructureInfo> infos;
+    for (const auto& pair : m_structures) {
+        StructureInfo info;
+        info.name = pair.first;
+        if (pair.second) {
+            info.fieldCount = pair.second->getFieldCount();
+            info.totalSize = pair.second->getTotalSize();
+            info.alignment = pair.second->getAlignment();
+            info.isPacked = pair.second->isPacked();
+            info.dependencies = pair.second->getDependencies();
+        }
+        infos.push_back(info);
+    }
+    return infos;
 }
 
 bool StructureManager::hasUnion(const std::string& name) const {
-    Q_UNUSED(name);
-    return false;
+    return m_unions.find(name) != m_unions.end();
 }
 
 std::shared_ptr<const AST::UnionDeclaration> StructureManager::getUnion(const std::string& name) const {
-    Q_UNUSED(name);
+    auto it = m_unions.find(name);
+    if (it != m_unions.end()) {
+        return it->second;
+    }
     return nullptr;
 }
 
 std::vector<std::string> StructureManager::getUnionNames() const {
-    return {};
+    std::vector<std::string> names;
+    for (const auto& pair : m_unions) {
+        names.push_back(pair.first);
+    }
+    return names;
 }
 
 bool StructureManager::hasTypedef(const std::string& name) const {
-    Q_UNUSED(name);
-    return false;
+    return m_typedefs.find(name) != m_typedefs.end();
 }
 
 std::shared_ptr<const AST::TypedefDeclaration> StructureManager::getTypedef(const std::string& name) const {
-    Q_UNUSED(name);
+    auto it = m_typedefs.find(name);
+    if (it != m_typedefs.end()) {
+        return it->second;
+    }
     return nullptr;
 }
 
 std::vector<std::string> StructureManager::getTypedefNames() const {
-    return {};
+    std::vector<std::string> names;
+    for (const auto& pair : m_typedefs) {
+        names.push_back(pair.first);
+    }
+    return names;
 }
 
 bool StructureManager::hasLayout(const std::string& structName) const {

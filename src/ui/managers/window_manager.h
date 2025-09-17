@@ -92,6 +92,7 @@ public:
     // Window access and information
     QWidget* getWindow(const QString &windowId) const;
     QWidget* getWindowContent(const QString &windowId) const;
+    QWidget* getContainerWidget() const { return m_containerWidget; }
     QString getActiveWindowId() const;
     QStringList getWindowIds() const;
     QString getWindowTitle(const QString &windowId) const;
@@ -118,9 +119,6 @@ public:
     // Settings and persistence
     QJsonObject saveState() const;
     bool restoreState(const QJsonObject &state);
-    
-    // Container widget
-    QWidget* getContainerWidget() const { return m_containerWidget; }
     
     // Drop zone support
     void setDropZonesVisible(bool visible);

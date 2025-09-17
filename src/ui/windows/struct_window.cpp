@@ -344,19 +344,35 @@ void StructWindow::applyTreeStyling()
     m_treeWidget->setStyleSheet(R"(
         QTreeWidget {
             background-color: white;
-            border: 1px solid #ccc;
-            selection-background-color: #3a7bd4;
+            border: 1px solid #999;
+            selection-background-color: #0078d4;
             selection-color: white;
+            color: #000000;
+            font-size: 13px;
         }
         QTreeWidget::item {
-            padding: 2px;
+            padding: 3px;
             border: none;
+            color: #000000;
+            background-color: white;
+        }
+        QTreeWidget::item:alternate {
+            background-color: #f8f8f8;
         }
         QTreeWidget::item:hover {
-            background-color: #f0f0f0;
+            background-color: #e8e8e8;
+            color: #000000;
         }
         QTreeWidget::item:selected {
-            background-color: #3a7bd4;
+            background-color: #0078d4;
+            color: white;
+        }
+        QHeaderView::section {
+            background-color: #e0e0e0;
+            color: #000000;
+            padding: 5px;
+            border: 1px solid #b0b0b0;
+            font-weight: bold;
         }
         QTreeWidget::branch:has-children:!has-siblings:closed,
         QTreeWidget::branch:closed:has-children:has-siblings {

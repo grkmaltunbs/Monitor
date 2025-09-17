@@ -1,12 +1,15 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 #include "src/ui/managers/tab_manager.h"
+#include "src/ui/managers/window_manager.h"
 #include "src/ui/managers/settings_manager.h"
 #include "src/ui/windows/struct_window.h"
 #include "src/ui/windows/performance_dashboard.h"
+#include "src/ui/windows/add_struct_window.h"
 #include "src/ui/test_framework/test_manager_window.h"
 #include "src/test_framework/execution/test_runner.h"
 #include "src/packet/sources/simulation_source.h"
+#include "src/parser/manager/structure_manager.h"
 
 #include <QApplication>
 #include <QMessageBox>
@@ -30,6 +33,8 @@ MainWindow::MainWindow(QWidget *parent)
     , m_tabManager(nullptr)
     , m_settingsManager(nullptr)
     , m_performanceDashboard(nullptr)
+    , m_addStructWindow(nullptr)
+    , m_structureManager(nullptr)
     , m_testManagerWindow(nullptr)
     , m_testRunner(nullptr)
     , m_simulationSource(nullptr)
@@ -47,7 +52,12 @@ MainWindow::MainWindow(QWidget *parent)
     m_settingsManager = new SettingsManager(this);
     m_tabManager = new TabManager(this);
     m_performanceDashboard = new PerformanceDashboard(this);
-    
+    m_structureManager = new Monitor::Parser::StructureManager(this);
+    m_addStructWindow = new AddStructWindow(this);
+
+    // Connect StructureManager to AddStructWindow
+    m_addStructWindow->setStructureManager(m_structureManager);
+
     // Initialize Test Framework components
     m_testRunner = std::make_shared<Monitor::TestFramework::TestRunner>();
     m_testManagerWindow = new Monitor::UI::TestFramework::TestManagerWindow(this);
@@ -201,10 +211,10 @@ void MainWindow::createToolbar()
     m_performanceDashboardButton->setIcon(style()->standardIcon(QStyle::SP_ComputerIcon));
     m_toolbar->addWidget(m_performanceDashboardButton);
     
-    // Add stretch to push everything to the left
-    QWidget *spacer = new QWidget();
-    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    m_toolbar->addWidget(spacer);
+    // Removed spacer that was hiding buttons - all buttons should now be visible
+    // QWidget *spacer = new QWidget();
+    // spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    // m_toolbar->addWidget(spacer);
 }
 
 void MainWindow::createOfflinePlaybackControls()
@@ -556,7 +566,19 @@ void MainWindow::onPacketRateUpdated(int packetsPerSecond)
 void MainWindow::onAddStructClicked()
 {
     qCDebug(mainWindow) << "Add Struct button clicked";
-    // TODO: Implement in future phases
+
+    if (!m_addStructWindow) {
+        qCWarning(mainWindow) << "Add Structure Window not initialized";
+        return;
+    }
+
+    // Show the Add Structure Window
+    if (m_addStructWindow->isWindowVisible()) {
+        m_addStructWindow->raise();
+        m_addStructWindow->activateWindow();
+    } else {
+        m_addStructWindow->showWindow();
+    }
 }
 
 void MainWindow::onTestFrameworkClicked()
@@ -712,37 +734,145 @@ void MainWindow::onPlaybackSpeedChanged(int speed)
 void MainWindow::onCreateGridWidget()
 {
     qCDebug(mainWindow) << "Create Grid Widget clicked";
-    // TODO: Implement in Phase 6
+    
+    QString activeTabId = m_tabManager->getActiveTabId();
+    if (activeTabId.isEmpty()) {
+        qCWarning(mainWindow) << "No active tab found for Grid Widget creation";
+        return;
+    }
+    
+    WindowManager* windowManager = m_tabManager->getWindowManager(activeTabId);
+    if (!windowManager) {
+        qCWarning(mainWindow) << "No window manager found for tab:" << activeTabId;
+        return;
+    }
+    
+    QString windowId = windowManager->createWindow(WindowManager::GridWindowType, "Grid Widget");
+    if (windowId.isEmpty()) {
+        qCWarning(mainWindow) << "Failed to create Grid Widget";
+    } else {
+        qCDebug(mainWindow) << "Successfully created Grid Widget with ID:" << windowId;
+    }
 }
 
 void MainWindow::onCreateGridLoggerWidget()
 {
     qCDebug(mainWindow) << "Create GridLogger Widget clicked";
-    // TODO: Implement in Phase 6
+    
+    QString activeTabId = m_tabManager->getActiveTabId();
+    if (activeTabId.isEmpty()) {
+        qCWarning(mainWindow) << "No active tab found for GridLogger Widget creation";
+        return;
+    }
+    
+    WindowManager* windowManager = m_tabManager->getWindowManager(activeTabId);
+    if (!windowManager) {
+        qCWarning(mainWindow) << "No window manager found for tab:" << activeTabId;
+        return;
+    }
+    
+    QString windowId = windowManager->createWindow(WindowManager::GridLoggerWindowType, "GridLogger Widget");
+    if (windowId.isEmpty()) {
+        qCWarning(mainWindow) << "Failed to create GridLogger Widget";
+    } else {
+        qCDebug(mainWindow) << "Successfully created GridLogger Widget with ID:" << windowId;
+    }
 }
 
 void MainWindow::onCreateLineChartWidget()
 {
     qCDebug(mainWindow) << "Create Line Chart Widget clicked";
-    // TODO: Implement in Phase 7
+    
+    QString activeTabId = m_tabManager->getActiveTabId();
+    if (activeTabId.isEmpty()) {
+        qCWarning(mainWindow) << "No active tab found for Line Chart Widget creation";
+        return;
+    }
+    
+    WindowManager* windowManager = m_tabManager->getWindowManager(activeTabId);
+    if (!windowManager) {
+        qCWarning(mainWindow) << "No window manager found for tab:" << activeTabId;
+        return;
+    }
+    
+    QString windowId = windowManager->createWindow(WindowManager::LineChartWindowType, "Line Chart Widget");
+    if (windowId.isEmpty()) {
+        qCWarning(mainWindow) << "Failed to create Line Chart Widget";
+    } else {
+        qCDebug(mainWindow) << "Successfully created Line Chart Widget with ID:" << windowId;
+    }
 }
 
 void MainWindow::onCreatePieChartWidget()
 {
     qCDebug(mainWindow) << "Create Pie Chart Widget clicked";
-    // TODO: Implement in Phase 7
+    
+    QString activeTabId = m_tabManager->getActiveTabId();
+    if (activeTabId.isEmpty()) {
+        qCWarning(mainWindow) << "No active tab found for Pie Chart Widget creation";
+        return;
+    }
+    
+    WindowManager* windowManager = m_tabManager->getWindowManager(activeTabId);
+    if (!windowManager) {
+        qCWarning(mainWindow) << "No window manager found for tab:" << activeTabId;
+        return;
+    }
+    
+    QString windowId = windowManager->createWindow(WindowManager::PieChartWindowType, "Pie Chart Widget");
+    if (windowId.isEmpty()) {
+        qCWarning(mainWindow) << "Failed to create Pie Chart Widget";
+    } else {
+        qCDebug(mainWindow) << "Successfully created Pie Chart Widget with ID:" << windowId;
+    }
 }
 
 void MainWindow::onCreateBarChartWidget()
 {
     qCDebug(mainWindow) << "Create Bar Chart Widget clicked";
-    // TODO: Implement in Phase 7
+    
+    QString activeTabId = m_tabManager->getActiveTabId();
+    if (activeTabId.isEmpty()) {
+        qCWarning(mainWindow) << "No active tab found for Bar Chart Widget creation";
+        return;
+    }
+    
+    WindowManager* windowManager = m_tabManager->getWindowManager(activeTabId);
+    if (!windowManager) {
+        qCWarning(mainWindow) << "No window manager found for tab:" << activeTabId;
+        return;
+    }
+    
+    QString windowId = windowManager->createWindow(WindowManager::BarChartWindowType, "Bar Chart Widget");
+    if (windowId.isEmpty()) {
+        qCWarning(mainWindow) << "Failed to create Bar Chart Widget";
+    } else {
+        qCDebug(mainWindow) << "Successfully created Bar Chart Widget with ID:" << windowId;
+    }
 }
 
 void MainWindow::onCreate3DChartWidget()
 {
     qCDebug(mainWindow) << "Create 3D Chart Widget clicked";
-    // TODO: Implement in Phase 8
+    
+    QString activeTabId = m_tabManager->getActiveTabId();
+    if (activeTabId.isEmpty()) {
+        qCWarning(mainWindow) << "No active tab found for 3D Chart Widget creation";
+        return;
+    }
+    
+    WindowManager* windowManager = m_tabManager->getWindowManager(activeTabId);
+    if (!windowManager) {
+        qCWarning(mainWindow) << "No window manager found for tab:" << activeTabId;
+        return;
+    }
+    
+    QString windowId = windowManager->createWindow(WindowManager::Chart3DWindowType, "3D Chart Widget");
+    if (windowId.isEmpty()) {
+        qCWarning(mainWindow) << "Failed to create 3D Chart Widget";
+    } else {
+        qCDebug(mainWindow) << "Successfully created 3D Chart Widget with ID:" << windowId;
+    }
 }
 
 void MainWindow::onPerformanceDashboardClicked()

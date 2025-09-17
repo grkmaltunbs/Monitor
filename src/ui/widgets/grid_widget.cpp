@@ -55,6 +55,9 @@ GridWidget::GridWidget(const QString& widgetId, QWidget* parent)
     setupConnections();
     setupContextMenu();
     
+    // Enable drag and drop
+    setAcceptDrops(true);
+    
     // Setup delayed update timer
     m_delayedUpdateTimer->setSingleShot(true);
     m_delayedUpdateTimer->setInterval(16); // ~60 FPS
@@ -456,21 +459,27 @@ void GridWidget::paintEvent(QPaintEvent* event) {
 }
 
 void GridWidget::dragEnterEvent(QDragEnterEvent* event) {
-    DisplayWidget::dragEnterEvent(event);
-    
-    if (event->isAccepted()) {
+    // Accept drops from the StructWindow
+    if (event->mimeData()->hasFormat("application/x-monitor-field") ||
+        event->mimeData()->hasFormat("application/json")) {
+        event->acceptProposedAction();
         m_showDropIndicator = true;
         m_dropPosition = event->position().toPoint();
         update();
+    } else {
+        event->ignore();
     }
 }
 
 void GridWidget::dragMoveEvent(QDragMoveEvent* event) {
-    DisplayWidget::dragMoveEvent(event);
-    
-    if (event->isAccepted()) {
+    // Accept moves from the StructWindow
+    if (event->mimeData()->hasFormat("application/x-monitor-field") ||
+        event->mimeData()->hasFormat("application/json")) {
+        event->acceptProposedAction();
         m_dropPosition = event->position().toPoint();
         update();
+    } else {
+        event->ignore();
     }
 }
 
@@ -479,7 +488,22 @@ void GridWidget::dropEvent(QDropEvent* event) {
     m_dropPosition = QPoint();
     update();
     
-    DisplayWidget::dropEvent(event);
+    // Handle the dropped data
+    if (event->mimeData()->hasFormat("application/x-monitor-field")) {
+        QString fieldPath = QString::fromUtf8(event->mimeData()->data("application/x-monitor-field"));
+        
+        // Also get the JSON data if available
+        QJsonObject fieldData;
+        if (event->mimeData()->hasFormat("application/json")) {
+            QJsonDocument doc = QJsonDocument::fromJson(event->mimeData()->data("application/json"));
+            fieldData = doc.object();
+        }
+        
+        handleDroppedField(fieldPath, fieldData);
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
 }
 
 void GridWidget::setupTable() {
@@ -550,25 +574,32 @@ void GridWidget::setupConnections() {
 void GridWidget::setupTableAppearance() {
     if (!m_table) return;
     
-    // Set default style
+    // Set default style with better contrast
     m_table->setStyleSheet(
         "QTableWidget {"
-        "    gridline-color: #d0d0d0;"
+        "    gridline-color: #b0b0b0;"
         "    background-color: white;"
-        "    alternate-background-color: #f7f7f7;"
+        "    alternate-background-color: #f8f8f8;"
+        "    color: #000000;"  // Ensure black text
         "}"
         "QTableWidget::item {"
         "    padding: 4px;"
         "    border: none;"
+        "    color: #000000;"  // Black text for all items
+        "    background-color: white;"
+        "}"
+        "QTableWidget::item:alternate {"
+        "    background-color: #f0f0f0;"  // Slightly darker alternate rows
         "}"
         "QTableWidget::item:selected {"
         "    background-color: #0078d4;"
         "    color: white;"
         "}"
         "QHeaderView::section {"
-        "    background-color: #f0f0f0;"
+        "    background-color: #e0e0e0;"  // Darker header background
+        "    color: #000000;"  // Black text for headers
         "    padding: 6px;"
-        "    border: 1px solid #d0d0d0;"
+        "    border: 1px solid #b0b0b0;"
         "    font-weight: bold;"
         "}"
     );
@@ -887,6 +918,13 @@ QTableWidgetItem* GridWidget::createFieldNameItem(const QString& fieldPath, cons
     item->setFieldPath(fieldPath);
     item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
     
+    // Set field name specific styling for better contrast
+    QFont font = item->font();
+    font.setBold(true);  // Make field names bold
+    item->setFont(font);
+    item->setBackground(QBrush(QColor(240, 240, 240)));  // Light gray background for field names
+    item->setForeground(QBrush(QColor(0, 0, 0)));  // Ensure black text
+    
     // Set icon if enabled
     if (m_gridOptions.showFieldIcons) {
         item->setIcon(getFieldIcon(fieldPath));
@@ -902,6 +940,10 @@ QTableWidgetItem* GridWidget::createFieldValueItem(const QVariant& value, const 
     QString formattedValue = formatValue(value, config);
     auto* item = new GridTableItem(formattedValue);
     item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+    
+    // Ensure good contrast for values
+    item->setForeground(QBrush(QColor(0, 0, 0)));  // Black text for values
+    item->setBackground(QBrush(QColor(255, 255, 255)));  // White background for values
     
     // Set tooltip
     item->setToolTip(formattedValue);
@@ -1133,4 +1175,59 @@ bool GridTableItem::operator<(const QTableWidgetItem& other) const {
     
     // Fall back to string comparison
     return text() < other.text();
+}
+
+void GridWidget::handleDroppedField(const QString& fieldPath, const QJsonObject& fieldData) {
+    PROFILE_SCOPE("GridWidget::handleDroppedField");
+    
+    // Check if this is a struct or a primitive field
+    QString fieldType = fieldData.value("type").toString();
+    
+    if (fieldType == "struct" || fieldType == "packet struct") {
+        // This is a struct - extract all primitive fields
+        QStringList primitiveFields;
+        extractPrimitiveFields(fieldData, fieldPath, primitiveFields);
+        
+        // Add each primitive field to the grid
+        for (const QString& primFieldPath : primitiveFields) {
+            // Use a default packet ID of 0 for now - this will be updated when packets arrive
+            addField(primFieldPath, 0, QJsonObject());
+        }
+        
+        Monitor::Logging::Logger::instance()->info("GridWidget",
+            QString("Added %1 primitive fields from struct '%2'")
+            .arg(primitiveFields.count()).arg(fieldPath));
+    } else {
+        // This is a primitive field - add it directly
+        // Use a default packet ID of 0 for now - this will be updated when packets arrive
+        addField(fieldPath, 0, QJsonObject());
+        
+        Monitor::Logging::Logger::instance()->info("GridWidget",
+            QString("Added field '%1' to grid").arg(fieldPath));
+    }
+}
+
+void GridWidget::extractPrimitiveFields(const QJsonObject& structData, const QString& basePath, 
+                                       QStringList& primitiveFields) {
+    // Get the fields/children of this struct
+    QJsonArray fields = structData.value("fields").toArray();
+    if (fields.isEmpty()) {
+        fields = structData.value("children").toArray();
+    }
+    
+    for (const QJsonValue& fieldValue : fields) {
+        QJsonObject field = fieldValue.toObject();
+        QString fieldName = field.value("name").toString();
+        QString fieldType = field.value("type").toString();
+        QString fieldPath = basePath.isEmpty() ? fieldName : basePath + "." + fieldName;
+        
+        // Check if this is a struct or a primitive type
+        if (fieldType.contains("struct") && !fieldType.contains("*")) {
+            // This is a nested struct - recurse into it
+            extractPrimitiveFields(field, fieldPath, primitiveFields);
+        } else if (!fieldType.isEmpty()) {
+            // This is a primitive field - add it to the list
+            primitiveFields.append(fieldPath);
+        }
+    }
 }
